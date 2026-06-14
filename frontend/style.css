@@ -1,0 +1,204 @@
+/* ============================================
+   EduTrack - Shared Styles
+   Includes light/dark theme support via
+   CSS variables and a [data-theme] attribute
+   on <html>.
+   ============================================ */
+
+:root {
+    --primary: #667eea;
+    --primary-dark: #5a67d8;
+    --secondary: #48bb78;
+    --secondary-dark: #38a169;
+    --danger: #f56565;
+    --danger-dark: #e53e3e;
+
+    --bg: #f0f2f5;
+    --surface: #ffffff;
+    --text: #2d3748;
+    --text-muted: #666666;
+    --border: #e2e8f0;
+    --shadow: rgba(0, 0, 0, 0.1);
+
+    --radius: 10px;
+}
+
+html[data-theme="dark"] {
+    --bg: #161a23;
+    --surface: #232836;
+    --text: #e6e9f0;
+    --text-muted: #a0aec0;
+    --border: #353b4a;
+    --shadow: rgba(0, 0, 0, 0.4);
+}
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    transition: background 0.3s ease, color 0.3s ease;
+}
+
+/* ---------- Auth pages (login/register) ---------- */
+.auth-body {
+    min-height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background: linear-gradient(-45deg, #667eea, #764ba2, #6b46c1, #4299e1);
+    background-size: 400% 400%;
+    animation: gradientShift 15s ease infinite;
+}
+
+@keyframes gradientShift {
+    0%   { background-position: 0% 50%; }
+    50%  { background-position: 100% 50%; }
+    100% { background-position: 0% 50%; }
+}
+
+.auth-container {
+    background: var(--surface);
+    color: var(--text);
+    padding: 40px;
+    border-radius: var(--radius);
+    box-shadow: 0 10px 30px var(--shadow);
+    width: 380px;
+    transition: background 0.3s ease, color 0.3s ease;
+}
+
+.auth-container h1 {
+    text-align: center;
+    margin-bottom: 10px;
+}
+
+.auth-container h3 {
+    text-align: center;
+    margin-bottom: 20px;
+    color: var(--text-muted);
+    font-weight: normal;
+}
+
+/* ---------- Forms ---------- */
+input, select {
+    width: 100%;
+    padding: 12px;
+    margin: 8px 0;
+    border: 1px solid var(--border);
+    border-radius: 5px;
+    font-size: 16px;
+    background: var(--surface);
+    color: var(--text);
+    transition: border-color 0.2s ease, background 0.3s ease, color 0.3s ease;
+}
+
+input:focus, select:focus {
+    outline: none;
+    border-color: var(--primary);
+}
+
+label {
+    display: block;
+    margin-top: 12px;
+    margin-bottom: 4px;
+    font-size: 14px;
+    color: var(--text-muted);
+}
+
+.field-error {
+    color: var(--danger);
+    font-size: 13px;
+    margin-top: -2px;
+    margin-bottom: 4px;
+    min-height: 16px;
+}
+
+/* ---------- Buttons ---------- */
+button, .btn {
+    padding: 12px 24px;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 16px;
+    text-decoration: none;
+    display: inline-block;
+    text-align: center;
+    transition: transform 0.15s ease, box-shadow 0.15s ease, background 0.2s ease;
+}
+
+button:active, .btn:active {
+    transform: translateY(1px);
+}
+
+.btn-primary, button.btn-primary, .auth-container button {
+    background: var(--primary);
+    color: white;
+    width: 100%;
+    margin-top: 10px;
+}
+
+.btn-primary:hover, .auth-container button:hover {
+    background: var(--primary-dark);
+    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+}
+
+.btn-secondary {
+    background: var(--secondary);
+    color: white;
+}
+
+.btn-secondary:hover {
+    background: var(--secondary-dark);
+    box-shadow: 0 4px 12px rgba(72, 187, 120, 0.4);
+}
+
+.btn-edit {
+    background: var(--secondary);
+    color: white;
+    padding: 8px 15px;
+    font-size: 14px;
+}
+
+.btn-edit:hover {
+    background: var(--secondary-dark);
+}
+
+.btn-delete {
+    background: var(--danger);
+    color: white;
+    padding: 8px 15px;
+    font-size: 14px;
+}
+
+.btn-delete:hover {
+    background: var(--danger-dark);
+}
+
+.btn-cancel {
+    background: var(--border);
+    color: var(--text);
+}
+
+.btn-cancel:hover {
+    background: var(--text-muted);
+    color: white;
+}
+
+/* ---------- Messages ---------- */
+.error {
+    color: var(--danger);
+    text-align: center;
+    margin-top: 10px;
+    min-height: 20px;
+}
+
+.success {
+    color: var(--secondary);
+    text-align: center;
+    margin-top: 10px;
+}
