@@ -22,3 +22,12 @@ function toggleTheme() {
 
     updateThemeToggleLabel();
 }
+
+function updateThemeToggleLabel() {
+    const btn = document.getElementById('themeToggle');
+    if (!btn) return;
+    const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+    btn.textContent = isDark ? '☀️ Light' : '🌙 Dark';
+}
+
+document.addEventListener('DOMContentLoaded', updateThemeToggleLabel);
