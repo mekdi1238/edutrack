@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard - EduTrack</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <nav>
+        <h2>📚 EduTrack</h2>
+        <div class="nav-links">
+            <span id="userName"></span>
+            <a href="dashboard.html">Dashboard</a>
+            <a href="students.html">Students</a>
+            <button class="theme-toggle" id="themeToggle" onclick="toggleTheme()">🌙 Dark</button>
+            <button onclick="logout()">Logout</button>
+        </div>
+    </nav>
+
+    <div class="container">
+        <div class="welcome">
+            <h3 id="welcomeMsg"></h3>
+            <p>Welcome to the Student Management System</p>
+        </div>
+
+        <div class="stats" id="stats">
+            <div class="stat-card">
+                <h3 id="totalStudents">-</h3>
+                <p>Total Students</p>
+            </div>
+            <div class="stat-card">
+                <h3 id="csStudents">-</h3>
+                <p>Computer Science</p>
+            </div>
+            <div class="stat-card">
+                <h3 id="businessStudents">-</h3>
+                <p>Business</p>
+            </div>
+            <div class="stat-card">
+                <h3 class="stat-clock" id="liveClock">--:--:--</h3>
+                <p id="liveDate">Loading date...</p>
+            </div>
+        </div>
+
+        <div class="actions">
+            <a href="add-student.html" class="btn btn-primary" style="width:auto;">+ Add New Student</a>
+            <a href="students.html" class="btn btn-secondary">View All Students</a>
+        </div>
+
+        <div class="recent-section">
+            <h3>📋 Recently Added Students</h3>
+            <table id="recentTable">
+                <thead>
+                    <tr><th>Student ID</th><th>Name</th><th>Department</th><th>GPA</th></tr>
+                </thead>
+                <tbody id="recentBody">
+                    <tr><td colspan="4">Loading...</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <script src="theme.js"></script>
+    <script>
+        async function checkAuth() {
+            try {
+                const response = await fetch('/api/me', { credentials: 'include' });
+                const data = await response.json();
+                if (!data.authenticated) {
+                    window.location.href = 'login.html';
+                } else {
+                    document.getElementById('userName').textContent = data.user.full_name;
+                    document.getElementById('welcomeMsg').textContent = `Hello, ${data.user.full_name}!`;
+                }
+            } catch (error) {
+                window.location.href = 'login.html';
+            }
+        }
+
+        function escapeHtml(value) {
+            const div = document.createElement('div');
+            div.textContent = value === null || value === undefined ? '' : String(value);
+            return div.innerHTML;
+        }
+
+        async function loadStats() {
+            try {
+                const response = await fetch('/api/dashboard/stats', { credentials: 'include' });
+
+                if (response.status === 401) {
+                    window.location.href = 'login.html';
+                    return;
+                }
+
+                const data = await response.json();
+                document.getElementById('totalStudents').textContent = data.totalStudents;
+                document.getElementById('csStudents').textContent = data.csStudents;
+                document.getElementById('businessStudents').textContent = data.businessStudents;
+
+                const recentBody = document.getElementById('recentBody');
+                if (data.recentStudents.length === 0) {
+                    recentBody.innerHTML = '<tr><td colspan="4">No students yet</td></tr>';
+                    return;
+                }
+
+                recentBody.innerHTML = data.recentStudents.map(student => `
+                    <tr>
+                        <td>${escapeHtml(student.student_id)}</td>
+                        <td>${escapeHtml(student.name)}</td>
+                        <td>${escapeHtml(student.department_name || 'N/A')}</td>
+                        <td>${escapeHtml(student.gpa)}</td>
+                    </tr>
+                `).join('');
+            } catch (error) {
+                console.error('Error loading stats:', error);
+            }
+        }
+
+        function startClock() {
+            function tick() {
+                const now = new Date();
+                document.getElementById('liveClock').textContent = now.toLocaleTimeString();
+                document.getElementById('liveDate').textContent = now.toLocaleDateString(undefined, {
+                    weekday: 'long', year: 'numeric', month: 'long', day: 'numeric'
+                });
+            }
+            tick();
+            setInterval(tick, 1000);
+        }
+
+        async function logout() {
+            await fetch('/api/logout', { method: 'POST', credentials: 'include' });
+            window.location.href = 'login.html';
+        }
+
+        checkAuth();
+        loadStats();
+        startClock();
+    </script>
+</body>
+</html>
