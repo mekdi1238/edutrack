@@ -8,7 +8,17 @@ Built as a group project. The backend is Node/Express talking to PostgreSQL, and
 the frontend is plain HTML/CSS/JS served as static files from the same server —
 no build step, no framework.
 
-## What it does
+## Group members
+
+| Name                  | ID               |
+|-----------------------|------------------|
+| Mariyamawit Alemseged | 024/BSC-B6/2023  |
+| Megdelawit Abraham    | 145/BSC-B6/2023  |
+| Munira Tebarek        | 030/BSC-B6/2023  |
+| Newal Elias           | 150/BSC-B6/2023  |
+| Samuel Girma          | 162/BSC-B6/2023  |
+
+## Features
 
 - Login and registration for staff (registration needs a shared passkey)
 - Session-based auth with an HTTP-only cookie; protected API routes return 401
@@ -19,7 +29,7 @@ no build step, no framework.
   domains, duplicate student-ID/email checks)
 - Light/dark theme that's remembered across pages via localStorage
 
-## Stack
+## Technologies used
 
 - **Backend:** Node.js, Express 5, express-session, bcryptjs, pg
 - **Database:** PostgreSQL
@@ -49,7 +59,7 @@ The Express server also serves the `frontend/` folder, so the API and the pages
 run on the same origin and port. That's why the session cookie works without any
 CORS headaches.
 
-## Running it locally
+## Installation steps
 
 You'll need Node.js and PostgreSQL installed.
 
@@ -119,3 +129,7 @@ valid session.
 - The admin password hash and the registration passkey are committed in
   `schema.sql` / `server.js` for convenience during development. Don't ship them.
 - There's no automated test suite yet.
+
+## GitHub repository
+
+https://github.com/mekdi1238/edutrack
