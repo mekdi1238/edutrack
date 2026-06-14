@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Register - EduTrack</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body class="auth-body">
+    <div class="auth-container">
+        <h1>📚 Register</h1>
+        <h3>Create a staff account</h3>
+        <input type="text" id="fullname" placeholder="Full Name" autocomplete="name">
+        <input type="text" id="username" placeholder="Username" autocomplete="username">
+        <input type="password" id="password" placeholder="Password" autocomplete="new-password">
+        <input type="text" id="passkey" placeholder="Passkey (required)">
+        <button onclick="register()">Register</button>
+        <div class="login-link">
+            <a href="login.html">Already have an account? Login</a>
+        </div>
+        <div id="message" class="error"></div>
+    </div>
+
+    <script src="theme.js"></script>
+    <script>
+        async function register() {
+            const fullname = document.getElementById('fullname').value.trim();
+            const username = document.getElementById('username').value.trim();
+            const password = document.getElementById('password').value;
+            const passkey = document.getElementById('passkey').value.trim();
+            const message = document.getElementById('message');
+
+            if (!fullname || !username || !password || !passkey) {
+                message.textContent = 'Please fill all fields';
+                message.className = 'error';
+                return;
+            }
+
+            message.className = 'error';
+            message.style.color = 'blue';
+            message.textContent = 'Creating account...';
+
+            try {
+                const response = await fetch('/api/register', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ full_name: fullname, username, password, passkey })
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    message.className = 'success';
+                    message.style.color = '';
+                    message.textContent = 'Registration successful! Redirecting to login...';
+                    setTimeout(() => {
+                        window.location.href = 'login.html';
+                    }, 1500);
+                } else {
+                    message.className = 'error';
+                    message.style.color = '';
+                    message.textContent = data.error || 'Registration failed';
+                }
+            } catch (error) {
+                message.className = 'error';
+                message.style.color = '';
+                message.textContent = 'Cannot connect to server';
+            }
+        }
+
+        document.getElementById('passkey').addEventListener('keypress', function (e) {
+            if (e.key === 'Enter') register();
+        });
+    </script>
+</body>
+</html>
