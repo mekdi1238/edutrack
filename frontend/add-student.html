@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Add Student - EduTrack</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <nav>
+        <h2>📚 EduTrack</h2>
+        <div class="nav-links">
+            <span id="userName"></span>
+            <a href="dashboard.html">Dashboard</a>
+            <a href="students.html">Students</a>
+            <button class="theme-toggle" id="themeToggle" onclick="toggleTheme()">🌙 Dark</button>
+            <button onclick="logout()">Logout</button>
+        </div>
+    </nav>
+
+    <div class="form-container">
+        <div class="form-card">
+            <h2>Add New Student</h2>
+            <p style="color: var(--text-muted); margin-top: 4px;">Fill in the student's details below</p>
+
+            <form id="studentForm" onsubmit="return false;">
+                <div class="form-row">
+                    <div>
+                        <label for="student_id">Student ID</label>
+                        <input type="text" id="student_id" placeholder="e.g. STU2026001">
+                        <div class="field-error" id="err_student_id"></div>
+                    </div>
+                    <div>
+                        <label for="name">Full Name</label>
+                        <input type="text" id="name" placeholder="e.g. Jane Doe">
+                        <div class="field-error" id="err_name"></div>
+                    </div>
+                </div>
+
+                <label for="email">Email</label>
+                <input type="email" id="email" placeholder="name@gmail.com">
+                <div class="field-error" id="err_email">
+                    Allowed domains: gmail.com, yahoo.com, hotmail.com, outlook.com, icloud.com
+                </div>
+
+                <label for="phone">Phone (optional)</label>
+                <input type="text" id="phone" placeholder="e.g. 555-1234">
+
+                <div class="form-row">
+                    <div>
+                        <label for="department_id">Department</label>
+                        <select id="department_id">
+                            <option value="">Loading departments...</option>
+                        </select>
+                        <div class="field-error" id="err_department_id"></div>
+                    </div>
+                    <div>
+                        <label for="year_level">Year Level</label>
+                        <select id="year_level">
+                            <option value="">Select year</option>
+                            <option value="1">Year 1</option>
+                            <option value="2">Year 2</option>
+                            <option value="3">Year 3</option>
+                            <option value="4">Year 4</option>
+                            <option value="5">Year 5</option>
+                        </select>
+                        <div class="field-error" id="err_year_level"></div>
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div>
+                        <label for="gpa">GPA (0.00 - 4.00)</label>
+                        <input type="number" id="gpa" step="0.01" min="0" max="4" placeholder="e.g. 3.50">
+                        <div class="field-error" id="err_gpa"></div>
+                    </div>
+                    <div>
+                        <label for="enrollment_date">Enrollment Date</label>
+                        <input type="date" id="enrollment_date">
+                    </div>
+                </div>
+
+                <div style="display:flex; gap:10px; margin-top:20px;">
+                    <button type="button" class="btn btn-primary" onclick="submitStudent()">Save Student</button>
+                    <a href="students.html" class="btn btn-cancel" style="width:auto;">Cancel</a>
+                </div>
+
+                <div id="formMessage" class="error"></div>
+            </form>
+        </div>
+    </div>
+
+    <script src="theme.js"></script>
+    <script>
+        const ALLOWED_DOMAINS = ['gmail.com', 'yahoo.com', 'hotmail.com', 'outlook.com', 'icloud.com'];
+
+        async function checkAuth() {
+            try {
+                const response = await fetch('/api/me', { credentials: 'include' });
+                const data = await response.json();
+                if (!data.authenticated) {
+                    window.location.href = 'login.html';
+                } else {
+                    document.getElementById('userName').textContent = data.user.full_name;
+                }
+            } catch (error) {
+                window.location.href = 'login.html';
+            }
+        }
+
+        async function loadDepartments() {
+            try {
+                const response = await fetch('/api/departments', { credentials: 'include' });
+                if (response.status === 401) {
+                    window.location.href = 'login.html';
+                    return;
+                }
+                const departments = await response.json();
+                const select = document.getElementById('department_id');
+                select.innerHTML = '<option value="">Select department</option>' +
+                    departments.map(d => `<option value="${d.id}">${d.name}</option>`).join('');
+            } catch (error) {
+                document.getElementById('department_id').innerHTML = '<option value="">Could not load departments</option>';
+            }
+        }
+
+        function clearErrors() {
+            document.querySelectorAll('.field-error').forEach(el => {
+                if (el.id !== 'err_email') el.textContent = '';
+            });
+            document.getElementById('formMessage').textContent = '';
+        }
+
+        function validateForm(values) {
+            let valid = true;
+
+            if (!values.student_id) {
+                document.getElementById('err_student_id').textContent = 'Student ID is required';
+                valid = false;
+            }
+            if (!values.name) {
+                document.getElementById('err_name').textContent = 'Name is required';
+                valid = false;
+            }
+            if (!values.email) {
+                document.getElementById('err_email').textContent = 'Email is required';
+                valid = false;
+            } else {
+                const domain = values.email.split('@')[1] ? values.email.split('@')[1].toLowerCase() : '';
+                if (!ALLOWED_DOMAINS.includes(domain)) {
+                    document.getElementById('err_email').textContent =
+                        'Email must be from: ' + ALLOWED_DOMAINS.join(', ');
+                    valid = false;
+                }
+            }
+            if (!values.department_id) {
+                document.getElementById('err_department_id').textContent = 'Please select a department';
+                valid = false;
+            }
+            if (!values.year_level) {
+                document.getElementById('err_year_level').textContent = 'Please select a year level';
+                valid = false;
+            }
+            if (values.gpa === '' || isNaN(values.gpa) || values.gpa < 0 || values.gpa > 4) {
+                document.getElementById('err_gpa').textContent = 'GPA must be between 0.00 and 4.00';
+                valid = false;
+            }
+
+            return valid;
+        }
+
+        function getFormValues() {
+            return {
+                student_id: document.getElementById('student_id').value.trim(),
+                name: document.getElementById('name').value.trim(),
+                email: document.getElementById('email').value.trim(),
+                phone: document.getElementById('phone').value.trim(),
+                department_id: document.getElementById('department_id').value,
+                year_level: document.getElementById('year_level').value,
+                gpa: document.getElementById('gpa').value,
+                enrollment_date: document.getElementById('enrollment_date').value
+            };
+        }
+
+        async function submitStudent() {
+            clearErrors();
+            const values = getFormValues();
+
+            if (!validateForm(values)) {
+                return;
+            }
+
+            const formMessage = document.getElementById('formMessage');
+            formMessage.style.color = 'blue';
+            formMessage.textContent = 'Saving...';
+
+            try {
+                const response = await fetch('/api/students', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    credentials: 'include',
+                    body: JSON.stringify(values)
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    formMessage.style.color = 'green';
+                    formMessage.textContent = 'Student added! Redirecting...';
+                    setTimeout(() => {
+                        window.location.href = 'students.html';
+                    }, 800);
+                } else {
+                    formMessage.style.color = '';
+                    formMessage.textContent = data.error || 'Failed to add student';
+                }
+            } catch (error) {
+                formMessage.style.color = '';
+                formMessage.textContent = 'Cannot connect to server';
+            }
+        }
+
+        async function logout() {
+            await fetch('/api/logout', { method: 'POST', credentials: 'include' });
+            window.location.href = 'login.html';
+        }
+
+        checkAuth();
+        loadDepartments();
+    </script>
+</body>
+</html>
