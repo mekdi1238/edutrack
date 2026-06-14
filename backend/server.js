@@ -209,10 +209,96 @@ app.get('/api/dashboard/stats', requireAuth, async (req, res) => {
 
 // --- DEPARTMENTS ---
 
+// Get all departments
 app.get('/api/departments', requireAuth, async (req, res) => {
     try {
         const result = await pool.query('SELECT id, name FROM departments ORDER BY name');
         res.json(result.rows);
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// GET /api/departments/:id — get one department
+app.get('/api/departments/:id', requireAuth, async (req, res) => {
+    const { id } = req.params;
+    try {
+        const result = await pool.query('SELECT id, name FROM departments WHERE id = $1', [id]);
+        if (result.rows.length === 0) {
+            return res.status(404).json({ error: 'Department not found' });
+        }
+        res.json(result.rows[0]);
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// POST /api/departments — create a department
+app.post('/api/departments', requireAuth, async (req, res) => {
+    const { name } = req.body;
+    if (!name || !name.trim()) {
+        return res.status(400).json({ error: 'Department name is required' });
+    }
+    try {
+        const result = await pool.query(
+            'INSERT INTO departments (name) VALUES ($1) RETURNING id, name',
+            [name.trim()]
+        );
+        res.status(201).json(result.rows[0]);
+    } catch (error) {
+        console.error(error);
+        if (error.code === '23505') { // unique violation in PostgreSQL
+            return res.status(400).json({ error: 'A department with that name already exists' });
+        }
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// PUT /api/departments/:id — rename a department
+app.put('/api/departments/:id', requireAuth, async (req, res) => {
+    const { id } = req.params;
+    const { name } = req.body;
+    if (!name || !name.trim()) {
+        return res.status(400).json({ error: 'Department name is required' });
+    }
+    try {
+        const result = await pool.query(
+            'UPDATE departments SET name = $1 WHERE id = $2 RETURNING id, name',
+            [name.trim(), id]
+        );
+        if (result.rows.length === 0) {
+            return res.status(404).json({ error: 'Department not found' });
+        }
+        res.json(result.rows[0]);
+    } catch (error) {
+        console.error(error);
+        if (error.code === '23505') {
+            return res.status(400).json({ error: 'A department with that name already exists' });
+        }
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// DELETE /api/departments/:id — delete a department (with a check that no students belong to it)
+app.delete('/api/departments/:id', requireAuth, async (req, res) => {
+    const { id } = req.params;
+    try {
+        // Check if any students belong to this department
+        const studentsCheck = await pool.query(
+            'SELECT COUNT(*) FROM students WHERE department_id = $1',
+            [id]
+        );
+        if (parseInt(studentsCheck.rows[0].count) > 0) {
+            return res.status(400).json({ error: 'Cannot delete department: students are assigned to it' });
+        }
+        
+        const result = await pool.query('DELETE FROM departments WHERE id = $1 RETURNING id', [id]);
+        if (result.rows.length === 0) {
+            return res.status(404).json({ error: 'Department not found' });
+        }
+        res.status(204).send();
     } catch (error) {
         console.error(error);
         res.status(500).json({ error: error.message });
