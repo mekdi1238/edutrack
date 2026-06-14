@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - EduTrack</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body class="auth-body">
+    <div class="auth-container">
+        <h1>📚 EduTrack</h1>
+        <h3>Student Management System</h3>
+        <input type="text" id="username" placeholder="Username" autocomplete="username">
+        <input type="password" id="password" placeholder="Password" autocomplete="current-password">
+        <button onclick="login()">Login</button>
+        <div class="register-link">
+            <a href="register.html">Register new account</a>
+        </div>
+        <div id="errorMsg" class="error"></div>
+    </div>
+
+    <script src="theme.js"></script>
+    <script>
+        // If already logged in, skip straight to the dashboard
+        (async function checkExistingSession() {
+            try {
+                const response = await fetch('/api/me', { credentials: 'include' });
+                const data = await response.json();
+                if (data.authenticated) {
+                    window.location.href = 'dashboard.html';
+                }
+            } catch (error) {
+                // not logged in, stay on login page
+            }
+        })();
+
+        async function login() {
+            const username = document.getElementById('username').value.trim();
+            const password = document.getElementById('password').value;
+            const errorMsg = document.getElementById('errorMsg');
+
+            if (!username || !password) {
+                errorMsg.style.color = '';
+                errorMsg.textContent = 'Please enter username and password';
+                return;
+            }
+
+            errorMsg.style.color = 'blue';
+            errorMsg.textContent = 'Logging in...';
+
+            try {
+                const response = await fetch('/api/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    credentials: 'include',
+                    body: JSON.stringify({ username, password })
+                });
+
+                const data = await response.json();
+
+                if (response.ok && data.success) {
+                    errorMsg.style.color = 'green';
+                    errorMsg.textContent = 'Success! Redirecting...';
+                    setTimeout(() => {
+                        window.location.href = 'dashboard.html';
+                    }, 600);
+                } else {
+                    errorMsg.style.color = '';
+                    errorMsg.textContent = data.error || 'Login failed';
+                }
+            } catch (error) {
+                errorMsg.style.color = '';
+                errorMsg.textContent = 'Cannot connect to server';
+            }
+        }
+
+        document.getElementById('password').addEventListener('keypress', function (e) {
+            if (e.key === 'Enter') login();
+        });
+        document.getElementById('username').addEventListener('keypress', function (e) {
+            if (e.key === 'Enter') login();
+        });
+    </script>
+</body>
+</html>
