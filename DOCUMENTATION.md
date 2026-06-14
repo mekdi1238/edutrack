@@ -236,7 +236,144 @@ Then open http://localhost:3000.
 
 ---
 
-## 6. Notes & limitations
+## 6. Request / response examples
+
+Concrete examples of what the API expects and returns.
+
+**Login — success**
+
+```
+POST /api/login
+Content-Type: application/json
+
+{ "username": "admin", "password": "admin123" }
+```
+```
+200 OK
+Set-Cookie: connect.sid=...; HttpOnly
+{ "success": true, "user": { "id": 1, "username": "admin",
+  "full_name": "Admin User", "role": "admin" } }
+```
+
+**Login — bad credentials**
+
+```
+401 Unauthorized
+{ "error": "Invalid credentials" }
+```
+
+**Create a student — success**
+
+```
+POST /api/students        (requires session cookie)
+{ "student_id": "STU2026010", "name": "Sara M", "email": "sara@gmail.com",
+  "department_id": 1, "year_level": 2, "gpa": 3.6 }
+```
+```
+200 OK
+{ "success": true, "id": 12 }
+```
+
+**Create a student — validation failure**
+
+```
+400 Bad Request
+{ "error": "GPA must be between 0 and 4.00. Year level must be between 1 and 5" }
+```
+
+**Dashboard stats**
+
+```
+GET /api/dashboard/stats        (requires session cookie)
+```
+```
+200 OK
+{ "totalStudents": 6, "csStudents": 3, "businessStudents": 2,
+  "recentStudents": [ { "id": 12, "student_id": "STU2026010",
+    "name": "Sara M", "department_name": "Computer Science", "gpa": "3.60", ... } ] }
+```
+
+### HTTP status codes used
+
+| Code | Meaning in this app |
+|------|---------------------|
+| 200 | Success |
+| 400 | Missing/invalid fields, or duplicate student ID/email |
+| 401 | Not logged in, or wrong login/passkey |
+| 404 | Student not found (`GET/PUT/DELETE /api/students/:id`) |
+| 500 | Unexpected server/database error |
+
+---
+
+## 7. Frontend page reference
+
+Each page is a standalone HTML file with an inline `<script>` that talks to the
+API with `fetch(..., { credentials: 'include' })`. Every protected page runs an
+auth check on load and redirects to `login.html` if there is no session.
+
+| Page | Purpose | Key behavior |
+|------|---------|--------------|
+| `login.html` | Sign in | If already logged in, auto-redirects to dashboard. Enter key submits. |
+| `register.html` | Create staff account | Requires the shared passkey; redirects to login on success. |
+| `dashboard.html` | Overview | Loads stats, shows recent students, runs a live clock (updates every second). |
+| `students.html` | Student list | Loads all students once into memory, then filters client-side by name/ID/email. Edit and Delete buttons per row; delete asks for confirmation. |
+| `add-student.html` | Create form | Client-side validation with inline field errors, then `POST /api/students`. |
+| `edit-student.html` | Update form | Reads `?id=` from the URL, pre-fills the form via `GET /api/students/:id`, then `PUT`s changes. |
+
+**Shared frontend pieces**
+
+- `style.css` — design system using CSS custom properties (`--primary`, `--bg`,
+  `--surface`, etc.). A `html[data-theme="dark"]` block overrides the variables
+  for dark mode. Covers nav, forms, buttons, tables, stat cards, and is
+  responsive (single-column forms under 500px).
+- `theme.js` — applies the saved theme on load, `toggleTheme()` flips it and
+  saves to `localStorage` under the key `edutrack-theme`, and the toggle button
+  label updates accordingly.
+
+**XSS note:** list rendering builds table rows from API data, so every value is
+passed through an `escapeHtml()` helper before being inserted into the DOM.
+
+---
+
+## 8. How a request flows (login example)
+
+1. User submits the login form; `login()` sends `POST /api/login` with
+   `credentials: 'include'`.
+2. The server looks up the username, compares the password with the stored bcrypt
+   hash using `bcrypt.compare()`.
+3. On a match it saves `req.session.user` and the session middleware sets an
+   HTTP-only cookie on the response.
+4. The browser stores the cookie and redirects to `dashboard.html`.
+5. The dashboard calls `GET /api/me` and `GET /api/dashboard/stats`, automatically
+   sending the cookie. `requireAuth` sees a valid session and allows the requests.
+6. Logout calls `POST /api/logout`, which destroys the session; subsequent
+   protected calls then return `401` and the page redirects back to login.
+
+---
+
+## 9. Security & validation summary
+
+- **Password storage:** bcrypt hashing (cost factor 10); raw passwords are never
+  persisted or logged.
+- **Sessions:** HTTP-only cookie (`httpOnly: true`) so JavaScript cannot read it;
+  `sameSite: 'lax'`; one-hour expiry (`maxAge: 3600000`).
+- **Route protection:** `requireAuth` middleware guards all student, department,
+  and dashboard endpoints.
+- **Registration gate:** new accounts require a shared passkey, so not just anyone
+  can self-register.
+- **Server-side validation:** all student input is validated on the server
+  (`validateStudent`) regardless of client checks — required fields, GPA range,
+  year range, allowed email domains.
+- **Duplicate protection:** unique constraints on `student_id` and `email` at the
+  database level, plus an explicit pre-check that returns a friendly 400; the
+  Postgres unique-violation code `23505` is also handled.
+- **SQL injection:** all queries use parameterized placeholders (`$1, $2, ...`),
+  never string concatenation.
+- **XSS:** user-supplied values are escaped before being rendered into tables.
+
+---
+
+## 10. Notes & limitations
 
 - The admin password and registration passkey are for development only and are
   visible in `schema.sql` / `server.js`. Change them before any real deployment.
